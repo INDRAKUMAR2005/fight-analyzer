@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🥊 Fight Analyzer — AI Biomechanics Dashboard</title>
+  <title>🥊 Fight Analyzer — Multi-Person AI Biomechanics</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap');
 
@@ -11,6 +11,7 @@
       --neon-green: #00ffcc;
       --neon-red: #ff0055;
       --neon-blue: #00aaff;
+      --neon-yellow: #ffdd00;
       --bg-dark: #0a0a0f;
       --bg-card: #12121f;
       --bg-card2: #1a1a2e;
@@ -32,284 +33,183 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.2rem 2rem;
+      padding: 1rem 2rem;
       border-bottom: 1px solid var(--border);
-      background: rgba(10,10,20,0.9);
+      background: rgba(10,10,20,0.95);
       backdrop-filter: blur(10px);
       position: sticky;
       top: 0;
       z-index: 100;
     }
 
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--neon-green);
-      text-shadow: 0 0 20px rgba(0,255,204,0.5);
-    }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: var(--neon-green); text-shadow: 0 0 20px rgba(0,255,204,0.4); }
+    header p { font-size: 0.75rem; color: var(--text-muted); }
 
-    header p {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 1rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      font-size: 0.8rem;
+    .badge {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.35rem 0.9rem; border-radius: 999px;
+      border: 1px solid var(--border); font-size: 0.75rem;
       background: var(--bg-card);
     }
 
-    .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--text-muted);
-    }
-
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
     .dot.active { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
     .main {
       display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 1.5rem;
-      padding: 1.5rem 2rem;
-      max-width: 1400px;
+      grid-template-columns: 1fr 360px;
+      gap: 1.2rem;
+      padding: 1.2rem 1.5rem;
+      max-width: 1440px;
       margin: 0 auto;
     }
 
-    .video-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
+    .video-panel { display: flex; flex-direction: column; gap: 1rem; }
 
     .canvas-wrapper {
-      position: relative;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: #000;
+      position: relative; border-radius: 14px; overflow: hidden;
+      border: 1px solid var(--border); background: #000;
       aspect-ratio: 16/9;
     }
 
-    #videoElement {
-      display: none;
-    }
+    #outputCanvas { position: absolute; width: 100%; height: 100%; object-fit: cover; }
 
-    #outputCanvas {
-      position: absolute; width: 100%; height: 100%;
-      object-fit: cover;
-    }
-
-    .action-label {
-      position: absolute;
-      top: 1rem; left: 1rem;
-      background: rgba(0,0,0,0.75);
+    .overlay-label {
+      position: absolute; top: 0.8rem; left: 0.8rem;
+      background: rgba(0,0,0,0.8);
       border-left: 3px solid var(--neon-green);
-      padding: 0.5rem 1rem;
+      padding: 0.4rem 0.9rem;
       border-radius: 6px;
-      font-size: 1.1rem;
-      font-weight: 700;
+      font-size: 0.9rem; font-weight: 700;
       color: var(--neon-green);
-      text-shadow: 0 0 10px rgba(0,255,204,0.7);
+      text-shadow: 0 0 8px rgba(0,255,204,0.6);
       transition: all 0.3s ease;
+      max-width: 70%;
     }
 
-    .fps-label {
-      position: absolute;
-      top: 1rem; right: 1rem;
-      background: rgba(0,0,0,0.6);
-      padding: 0.3rem 0.7rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
+    .fps-chip {
+      position: absolute; top: 0.8rem; right: 0.8rem;
+      background: rgba(0,0,0,0.7);
+      padding: 0.25rem 0.6rem; border-radius: 5px;
+      font-size: 0.75rem; color: var(--text-muted);
     }
 
-    .controls {
-      display: flex;
-      gap: 1rem;
+    .persons-chip {
+      position: absolute; bottom: 0.8rem; left: 0.8rem;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.7rem; border-radius: 5px;
+      font-size: 0.75rem; color: var(--neon-blue);
     }
+
+    .controls { display: flex; gap: 0.8rem; }
 
     .btn {
-      flex: 1;
-      padding: 0.8rem 1.5rem;
-      border-radius: 10px;
-      border: none;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      flex: 1; padding: 0.75rem; border-radius: 10px; border: none;
+      font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s ease;
     }
 
-    .btn-primary {
-      background: var(--neon-green);
-      color: #000;
-    }
-    .btn-primary:hover { filter: brightness(1.2); transform: translateY(-2px); }
-    .btn-primary:active { transform: translateY(0); }
+    .btn-primary { background: var(--neon-green); color: #000; }
+    .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-danger { background: var(--neon-red); color: #fff; }
+    .btn-danger:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-    .btn-danger {
-      background: var(--neon-red);
-      color: #fff;
-    }
-    .btn-danger:hover { filter: brightness(1.2); transform: translateY(-2px); }
-
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
+    .right-panel { display: flex; flex-direction: column; gap: 1rem; }
 
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.2rem;
+      border-radius: 12px; padding: 1rem;
     }
 
-    .card h3 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--text-muted);
-      margin-bottom: 1rem;
+    .card-title {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--text-muted); margin-bottom: 0.8rem;
     }
 
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-    }
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 
     .metric-box {
       background: var(--bg-card2);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.9rem;
-      text-align: center;
+      border-radius: 9px; padding: 0.7rem; text-align: center;
     }
+    .metric-box .val { font-size: 1.7rem; font-weight: 900; color: var(--neon-blue); line-height: 1; }
+    .metric-box .lbl { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem; }
 
-    .metric-box .val {
-      font-size: 1.8rem;
-      font-weight: 900;
-      color: var(--neon-blue);
-      line-height: 1;
+    /* Per-person tabs */
+    .person-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+    .person-tab {
+      padding: 0.25rem 0.7rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--bg-card2);
+      color: var(--text-muted); transition: all 0.2s;
     }
+    .person-tab.active { color: #000; border-color: transparent; }
+    .person-tab[data-idx="0"].active { background: var(--neon-green); }
+    .person-tab[data-idx="1"].active { background: var(--neon-red); }
+    .person-tab[data-idx="2"].active { background: var(--neon-blue); }
+    .person-tab[data-idx="3"].active { background: var(--neon-yellow); color: #222; }
+    .person-tab[data-idx="4"].active { background: #aa44ff; }
 
-    .metric-box .lbl {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-top: 0.3rem;
+    .moves-bar { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .move-pill {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      display: flex; align-items: center; gap: 0.35rem;
     }
+    .move-pill .count { color: var(--neon-blue); font-weight: 700; }
 
-    #moveLog {  
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .move-entry {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-card2);
-      border-radius: 8px;
-      padding: 0.5rem 0.8rem;
-      font-size: 0.85rem;
-      border-left: 3px solid var(--neon-blue);
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn { from{opacity:0; transform:translateX(-10px)} to{opacity:1; transform:translateX(0)} }
-
-    .move-entry .time { color: var(--text-muted); font-size: 0.75rem; }
-
-    #feedbackBox {
-      min-height: 80px;
-    }
+    #feedbackBox { min-height: 70px; }
 
     .feedback-msg {
-      padding: 0.6rem 0.8rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      margin-bottom: 0.4rem;
+      padding: 0.5rem 0.7rem; border-radius: 7px; font-size: 0.82rem;
+      margin-bottom: 0.35rem; animation: slideIn 0.3s ease;
+    }
+    .feedback-good { background: rgba(0,255,100,0.08); border-left: 3px solid #00ff64; color: #00ff64; }
+    .feedback-warn { background: rgba(255,170,0,0.08); border-left: 3px solid #ffaa00; color: #ffaa00; }
+    .idle-msg { color: var(--text-muted); font-style: italic; font-size: 0.82rem; }
+
+    #moveLog { display: flex; flex-direction: column; gap: 0.35rem; max-height: 160px; overflow-y: auto; }
+
+    .move-entry {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-card2); border-radius: 7px; padding: 0.4rem 0.7rem;
+      font-size: 0.8rem; border-left: 3px solid var(--neon-blue);
       animation: slideIn 0.3s ease;
     }
+    .move-entry .time { color: var(--text-muted); font-size: 0.7rem; }
 
-    .feedback-good {
-      background: rgba(0,255,100, 0.1);
-      border-left: 3px solid #00ff64;
-      color: #00ff64;
-    }
-
-    .feedback-warn {
-      background: rgba(255, 170, 0, 0.1);
-      border-left: 3px solid #ffaa00;
-      color: #ffaa00;
-    }
-
-    .idle-msg {
-      color: var(--text-muted);
-      font-style: italic;
-      font-size: 0.85rem;
-    }
-
-    .moves-bar {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .move-pill {
-      background: var(--bg-card2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.3rem 0.7rem;
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .move-pill .count {
-      color: var(--neon-blue);
-      font-weight: 700;
-    }
-
-    video { display: none; }
+    @keyframes slideIn { from{opacity:0; transform:translateX(-8px)} to{opacity:1; transform:translateX(0)} }
   </style>
 </head>
 <body>
 
 <header>
   <div>
-    <h1>🥊 Fight Analyzer</h1>
-    <p>AI-Powered Biomechanics Feedback</p>
+    <h1>🥊 Fight Analyzer — Multi-Fighter</h1>
+    <p>Real-time pose tracking · action recognition · biomechanics feedback</p>
   </div>
-  <div class="status-badge">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">Camera Off</span>
+  <div class="header-right">
+    <div class="badge">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Camera Off</span>
+    </div>
   </div>
 </header>
 
 <div class="main">
-  <!-- Left: Video Feed -->
+  <!-- Video Feed -->
   <div class="video-panel">
     <div class="canvas-wrapper">
-      <video id="videoElement" playsinline></video>
       <canvas id="outputCanvas"></canvas>
-      <div class="action-label" id="actionLabel">⚡ Ready</div>
-      <div class="fps-label" id="fpsLabel">-- FPS</div>
+      <div class="overlay-label" id="actionLabel">⚡ Ready</div>
+      <div class="fps-chip" id="fpsLabel">-- FPS</div>
+      <div class="persons-chip" id="personsChip">0 Fighters Detected</div>
     </div>
     <div class="controls">
       <button class="btn btn-primary" id="startBtn" onclick="startCamera()">▶ Start Camera</button>
@@ -317,199 +217,263 @@
     </div>
   </div>
 
-  <!-- Right: Analytics -->
+  <!-- Right Panel -->
   <div class="right-panel">
-    <!-- Metrics -->
+
+    <!-- Global Metrics -->
     <div class="card">
-      <h3>Live Metrics</h3>
+      <div class="card-title">Live Metrics</div>
       <div class="metrics-grid">
         <div class="metric-box">
           <div class="val" id="metricFPS">0</div>
-          <div class="lbl">System FPS</div>
+          <div class="lbl">FPS</div>
+        </div>
+        <div class="metric-box">
+          <div class="val" id="metricPersons">0</div>
+          <div class="lbl">Fighters</div>
         </div>
         <div class="metric-box">
           <div class="val" id="metricPunches">0</div>
           <div class="lbl">Total Punches</div>
         </div>
         <div class="metric-box">
-          <div class="val" id="metricElbowL">--°</div>
-          <div class="lbl">Left Elbow</div>
-        </div>
-        <div class="metric-box">
-          <div class="val" id="metricElbowR">--°</div>
-          <div class="lbl">Right Elbow</div>
+          <div class="val" id="metricAction">--</div>
+          <div class="lbl">Last Action</div>
         </div>
       </div>
     </div>
 
-    <!-- Move Counts -->
+    <!-- Per-Person Selector -->
     <div class="card">
-      <h3>Move Tracker</h3>
+      <div class="card-title">Fighter Focus</div>
+      <div class="person-tabs" id="personTabs">
+        <span class="idle-msg">Camera off</span>
+      </div>
       <div class="moves-bar" id="movesBar">
         <div class="move-pill">Jab <span class="count" data-move="Jab">0</span></div>
         <div class="move-pill">Cross <span class="count" data-move="Cross">0</span></div>
         <div class="move-pill">L.Hook <span class="count" data-move="Left Hook">0</span></div>
         <div class="move-pill">R.Hook <span class="count" data-move="Right Hook">0</span></div>
-        <div class="move-pill">L.Upper <span class="count" data-move="Left Uppercut">0</span></div>
-        <div class="move-pill">R.Upper <span class="count" data-move="Right Uppercut">0</span></div>
+        <div class="move-pill">L.Up <span class="count" data-move="Left Uppercut">0</span></div>
+        <div class="move-pill">R.Up <span class="count" data-move="Right Uppercut">0</span></div>
       </div>
     </div>
 
-    <!-- Biomechanics Feedback -->
+    <!-- Correction Engine -->
     <div class="card" style="flex:1;">
-      <h3>Correction Engine</h3>
+      <div class="card-title">Correction Engine</div>
       <div id="feedbackBox">
-        <p class="idle-msg">Start the camera and throw a punch to see AI feedback...</p>
+        <p class="idle-msg">Start camera and throw a punch to see AI feedback...</p>
       </div>
     </div>
 
-    <!-- Recent Move Log -->
+    <!-- Move Log -->
     <div class="card">
-      <h3>Move Log</h3>
+      <div class="card-title">Move Log</div>
       <div id="moveLog">
-        <p class="idle-msg" style="padding: 0.3rem;">No moves detected yet.</p>
+        <p class="idle-msg" style="padding:0.2rem;">No moves yet.</p>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- MediaPipe CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+<!-- MediaPipe Tasks Vision (supports multi-person!) -->
+<script type="module">
+  import { PoseLandmarker, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.js";
 
-<script>
-  const videoEl = document.getElementById('videoElement');
   const canvas = document.getElementById('outputCanvas');
   const ctx = canvas.getContext('2d');
 
-  let camera = null;
-  let pose = null;
-  let punchCount = 0;
-  let lastActionTime = 0;
-  let lastAction = 'idle';
-  let pTm = performance.now();
-  const moveCooldown = 800;
-  const moveCounts = { 'Jab': 0, 'Cross': 0, 'Left Hook': 0, 'Right Hook': 0, 'Left Uppercut': 0, 'Right Uppercut': 0 };
+  const PERSON_COLORS = ['#00ffcc', '#ff0055', '#00aaff', '#ffdd00', '#aa44ff'];
 
-  // ─────────── Math helpers ───────────
+  let poseLandmarker = null;
+  let stream = null;
+  let videoEl = null;
+  let animId = null;
+  let pTm = performance.now();
+  let totalPunches = 0;
+  let activePerson = 0;
+
+  // Per-person state
+  const MAX_PERSONS = 4;
+  const personState = Array.from({ length: MAX_PERSONS }, () => ({
+    lastAction: 'idle',
+    lastActionTime: 0,
+    moveCounts: { 'Jab': 0, 'Cross': 0, 'Left Hook': 0, 'Right Hook': 0, 'Left Uppercut': 0, 'Right Uppercut': 0 }
+  }));
+
+  // ── Math helpers ──
   function angle3(a, b, c) {
-    // b is the vertex
     const ab = { x: a.x - b.x, y: a.y - b.y };
     const cb = { x: c.x - b.x, y: c.y - b.y };
     const dot = ab.x * cb.x + ab.y * cb.y;
-    const magAB = Math.hypot(ab.x, ab.y);
-    const magCB = Math.hypot(cb.x, cb.y);
-    if (magAB === 0 || magCB === 0) return 0;
-    return Math.acos(Math.min(1, Math.max(-1, dot / (magAB * magCB)))) * (180 / Math.PI);
+    const mag = Math.hypot(ab.x, ab.y) * Math.hypot(cb.x, cb.y);
+    if (mag === 0) return 0;
+    return Math.acos(Math.min(1, Math.max(-1, dot / mag))) * (180 / Math.PI);
   }
 
-  // ─────────── Action Recognition ───────────
-  function detectMove(lm, elbowL, elbowR, shoulderL, shoulderR) {
+  // ── Action Recognition (per person) ──
+  function detectMove(lm, personIdx) {
+    const st = personState[personIdx];
     const now = Date.now();
-    if (now - lastActionTime < moveCooldown) return lastAction;
+    if (now - st.lastActionTime < 700) return st.lastAction;
 
-    // Wrist y positions (lower y = higher in frame = raised wrist on mirrored view)
-    const wristLY = lm[15].y;
-    const wristRY = lm[16].y;
-    const elbowLY = lm[13].y;
-    const elbowRY = lm[14].y;
-
-    let detected = null;
-
-    // Jab: Left arm extended (>140°)
-    if (elbowL > 140 && shoulderL > 55) detected = 'Jab';
-    // Cross: Right arm extended (>140°)
-    else if (elbowR > 140 && shoulderR > 55) detected = 'Cross';
-    // Left Hook: Elbow bent 70-120°
-    else if (elbowL >= 70 && elbowL <= 120 && shoulderL > 55) detected = 'Left Hook';
-    // Right Hook
-    else if (elbowR >= 70 && elbowR <= 120 && shoulderR > 55) detected = 'Right Hook';
-    // Left Uppercut: Elbow bent, wrist above elbow (lower y value)
-    else if (elbowL >= 60 && elbowL <= 115 && wristLY < elbowLY - 0.04) detected = 'Left Uppercut';
-    // Right Uppercut
-    else if (elbowR >= 60 && elbowR <= 115 && wristRY < elbowRY - 0.04) detected = 'Right Uppercut';
-
-    if (detected) {
-      lastAction = detected;
-      lastActionTime = now;
-      return detected;
-    }
-
-    if (now - lastActionTime > 1200) lastAction = 'idle';
-    return lastAction;
-  }
-
-  // ─────────── Biomechanics Feedback ───────────
-  const idealRanges = {
-    'Jab':          { elbowAngle: [155, 180], label: 'Left elbow angle' },
-    'Cross':        { elbowAngle: [155, 180], label: 'Right elbow angle' },
-    'Left Hook':    { elbowAngle: [80, 110],  label: 'Left elbow angle' },
-    'Right Hook':   { elbowAngle: [80, 110],  label: 'Right elbow angle' },
-    'Left Uppercut':  { elbowAngle: [70, 110], label: 'Left elbow angle' },
-    'Right Uppercut': { elbowAngle: [70, 110], label: 'Right elbow angle' },
-  };
-
-  function getFeedback(action, elbowL, elbowR) {
-    const msgs = [];
-    const config = idealRanges[action];
-    if (!config) return msgs;
-
-    const isLeft = action.includes('Left') || action === 'Jab';
-    const elbow = isLeft ? elbowL : elbowR;
-    const [lo, hi] = config.elbowAngle;
-
-    if (elbow < lo) {
-      const hints = {
-        'Jab': "Fully extend your arm for maximum reach!",
-        'Cross': "Extend your right arm fully on the punch.",
-        'Left Hook': "Open your elbow ~90° for a powerful hook.",
-        'Right Hook': "Open your right elbow ~90° for a powerful hook.",
-        'Left Uppercut': "Bend your elbow more, aim for ~90°.",
-        'Right Uppercut': "Bend your right elbow more, aim for ~90°."
-      };
-      msgs.push({ text: hints[action] || `${config.label}: ${elbow.toFixed(0)}° is too low (ideal >${lo}°)`, good: false });
-    } else if (elbow > hi && hi < 180) {
-      msgs.push({ text: `${config.label}: ${elbow.toFixed(0)}° — keep elbow slightly more bent for power.`, good: false });
-    } else {
-      msgs.push({ text: `✅ ${action}: Great form! (${elbow.toFixed(0)}°)`, good: true });
-    }
-    return msgs;
-  }
-
-  // ─────────── Pose Callback ───────────
-  function onResults(results) {
-    canvas.width = videoEl.videoWidth || 640;
-    canvas.height = videoEl.videoHeight || 480;
-
-    // ── Draw the actual video frame first (mirrored horizontally) ──
-    ctx.save();
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    if (!results.poseLandmarks) {
-      document.getElementById('actionLabel').textContent = '⚡ No pose detected';
-      return;
-    }
-
-    const lm = results.poseLandmarks;
-
-    // ── Draw skeleton OVER the video frame ──
-    // Mirror landmark x-coordinates for display on mirrored video
-    const mirroredLm = lm.map(p => ({ ...p, x: 1 - p.x }));
-    drawConnectors(ctx, mirroredLm, POSE_CONNECTIONS, { color: 'rgba(0,255,204,0.85)', lineWidth: 4 });
-    drawLandmarks(ctx, mirroredLm, { color: '#ff0055', lineWidth: 2, radius: 5 });
-
-    // Angles (landmark indices: shoulder=11/12, elbow=13/14, wrist=15/16, hip=23/24)
     const elbowL = angle3(lm[11], lm[13], lm[15]);
     const elbowR = angle3(lm[12], lm[14], lm[16]);
     const shoulderL = angle3(lm[23], lm[11], lm[13]);
     const shoulderR = angle3(lm[24], lm[12], lm[14]);
+    const wristLY = lm[15].y, wristRY = lm[16].y;
+    const elbowLY = lm[13].y, elbowRY = lm[14].y;
 
-    document.getElementById('metricElbowL').textContent = elbowL.toFixed(0) + '°';
-    document.getElementById('metricElbowR').textContent = elbowR.toFixed(0) + '°';
+    let detected = null;
+    if      (elbowL > 140 && shoulderL > 50)                               detected = 'Jab';
+    else if (elbowR > 140 && shoulderR > 50)                               detected = 'Cross';
+    else if (elbowL >= 65 && elbowL <= 125 && shoulderL > 50)              detected = 'Left Hook';
+    else if (elbowR >= 65 && elbowR <= 125 && shoulderR > 50)              detected = 'Right Hook';
+    else if (elbowL >= 55 && elbowL <= 115 && wristLY < elbowLY - 0.04)   detected = 'Left Uppercut';
+    else if (elbowR >= 55 && elbowR <= 115 && wristRY < elbowRY - 0.04)   detected = 'Right Uppercut';
+
+    if (detected && detected !== st.lastAction) {
+      st.lastAction = detected;
+      st.lastActionTime = now;
+      st.moveCounts[detected]++;
+      totalPunches++;
+      document.getElementById('metricPunches').textContent = totalPunches;
+      addToLog(detected, personIdx);
+      if (personIdx === activePerson) updateMovePills(personIdx);
+    } else if (!detected && now - st.lastActionTime > 1200) {
+      st.lastAction = 'idle';
+    }
+
+    return st.lastAction;
+  }
+
+  // ── Biomechanics Feedback ──
+  const idealRanges = {
+    'Jab':           { angle: [155,180], side: 'L', hint: "Extend your arm fully for maximum reach!" },
+    'Cross':         { angle: [155,180], side: 'R', hint: "Drive through with your full right arm extension." },
+    'Left Hook':     { angle: [80, 110], side: 'L', hint: "Open your elbow to ~90° for hook power." },
+    'Right Hook':    { angle: [80, 110], side: 'R', hint: "Open your right elbow ~90° for impact." },
+    'Left Uppercut': { angle: [70, 110], side: 'L', hint: "Drive upward from your hips with a ~90° bend." },
+    'Right Uppercut':{ angle: [70, 110], side: 'R', hint: "Power from hips, keep elbow at ~90°." },
+  };
+
+  function getFeedback(action, lm) {
+    const cfg = idealRanges[action];
+    if (!cfg) return [];
+    const elbowL = angle3(lm[11], lm[13], lm[15]);
+    const elbowR = angle3(lm[12], lm[14], lm[16]);
+    const elbow = cfg.side === 'L' ? elbowL : elbowR;
+    const [lo, hi] = cfg.angle;
+    if (elbow < lo) return [{ text: cfg.hint, good: false }];
+    if (elbow > hi && hi < 180) return [{ text: `Good power! Keep elbow slightly bent (${elbow.toFixed(0)}°).`, good: false }];
+    return [{ text: `✅ ${action}: Great form! (${elbow.toFixed(0)}°)`, good: true }];
+  }
+
+  // ── UI Helpers ──
+  function updateMovePills(idx) {
+    const counts = personState[idx].moveCounts;
+    document.querySelectorAll('[data-move]').forEach(el => {
+      el.textContent = counts[el.getAttribute('data-move')] || 0;
+    });
+  }
+
+  function buildPersonTabs(count) {
+    const tabsEl = document.getElementById('personTabs');
+    tabsEl.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const tab = document.createElement('span');
+      tab.className = 'person-tab' + (i === activePerson ? ' active' : '');
+      tab.setAttribute('data-idx', i);
+      tab.textContent = `Fighter ${i + 1}`;
+      tab.onclick = () => { activePerson = i; buildPersonTabs(count); updateMovePills(i); };
+      tabsEl.appendChild(tab);
+    }
+  }
+
+  function addToLog(action, personIdx) {
+    const log = document.getElementById('moveLog');
+    const dummy = log.querySelector('.idle-msg');
+    if (dummy) dummy.remove();
+    const now = new Date();
+    const t = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    const color = PERSON_COLORS[personIdx % PERSON_COLORS.length];
+    const entry = document.createElement('div');
+    entry.className = 'move-entry';
+    entry.style.borderColor = color;
+    entry.innerHTML = `<span style="color:${color}">🥊 F${personIdx+1}: ${action}</span><span class="time">${t}</span>`;
+    log.prepend(entry);
+    while (log.children.length > 12) log.removeChild(log.lastChild);
+  }
+
+  // ── Main Render Loop ──
+  function renderFrame() {
+    if (!videoEl || videoEl.readyState < 2) { animId = requestAnimationFrame(renderFrame); return; }
+
+    canvas.width = videoEl.videoWidth;
+    canvas.height = videoEl.videoHeight;
+
+    // Mirror the video horizontally
+    ctx.save();
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoEl, 0, 0);
+    ctx.restore();
+
+    // Run pose detection
+    const startTime = performance.now();
+    const results = poseLandmarker.detectForVideo(videoEl, startTime);
+
+    const numPersons = results.landmarks ? results.landmarks.length : 0;
+    document.getElementById('metricPersons').textContent = numPersons;
+    document.getElementById('personsChip').textContent = `${numPersons} Fighter${numPersons !== 1 ? 's' : ''} Detected`;
+
+    if (numPersons > 0) {
+      buildPersonTabs(numPersons);
+
+      const drawUtil = new DrawingUtils(ctx);
+
+      results.landmarks.forEach((lm, idx) => {
+        const color = PERSON_COLORS[idx % PERSON_COLORS.length];
+
+        // Mirror landmarks for drawing (since canvas is already flipped)
+        const mirroredLm = lm.map(p => ({ ...p, x: 1 - p.x }));
+
+        drawUtil.drawConnectors(mirroredLm, PoseLandmarker.POSE_CONNECTIONS, { color: color + 'cc', lineWidth: 3 });
+        drawUtil.drawLandmarks(mirroredLm, { color: '#ffffff', fillColor: color, lineWidth: 1, radius: 4 });
+
+        // Label above head (landmark 0 = nose)
+        const action = detectMove(lm, idx);
+        const nose = mirroredLm[0];
+        const nx = nose.x * canvas.width;
+        const ny = nose.y * canvas.height - 20;
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.font = 'bold 16px Outfit, sans-serif';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(`F${idx + 1}: ${action !== 'idle' ? action : '...'}`, nx - 30, ny);
+        ctx.restore();
+
+        // Show feedback for active person
+        if (idx === activePerson && action !== 'idle') {
+          const feedbacks = getFeedback(action, lm);
+          const box = document.getElementById('feedbackBox');
+          box.innerHTML = feedbacks.map(f =>
+            `<div class="feedback-msg ${f.good ? 'feedback-good' : 'feedback-warn'}">${f.text}</div>`
+          ).join('');
+          document.getElementById('metricAction').textContent = action.split(' ').pop();
+          document.getElementById('actionLabel').textContent = `🥊 F${activePerson+1}: ${action}`;
+          document.getElementById('actionLabel').style.borderColor = color;
+          document.getElementById('actionLabel').style.color = color;
+        }
+      });
+    } else {
+      document.getElementById('actionLabel').textContent = '⚡ No fighter detected';
+      document.getElementById('actionLabel').style.borderColor = 'var(--neon-green)';
+      document.getElementById('actionLabel').style.color = 'var(--neon-green)';
+    }
 
     // FPS
     const now = performance.now();
@@ -518,91 +482,50 @@
     document.getElementById('fpsLabel').textContent = fps + ' FPS';
     document.getElementById('metricFPS').textContent = fps;
 
-    // Action
-    const action = detectMove(lm, elbowL, elbowR, shoulderL, shoulderR);
-
-    if (action !== 'idle') {
-      document.getElementById('actionLabel').textContent = '🥊 ' + action;
-      document.getElementById('actionLabel').style.borderColor = '#ff0055';
-      document.getElementById('actionLabel').style.color = '#ff0055';
-      document.getElementById('actionLabel').style.textShadow = '0 0 10px rgba(255,0,85,0.7)';
-
-      // Feedback
-      const feedbacks = getFeedback(action, elbowL, elbowR);
-      const box = document.getElementById('feedbackBox');
-      box.innerHTML = feedbacks.map(f =>
-        `<div class="feedback-msg ${f.good ? 'feedback-good' : 'feedback-warn'}">${f.text}</div>`
-      ).join('');
-
-      // Counts (only on new detection)
-      if (action !== lastAction || Date.now() - lastActionTime < 100) {
-        if (moveCounts[action] !== undefined) {
-          moveCounts[action]++;
-          punchCount++;
-          document.getElementById('metricPunches').textContent = punchCount;
-          document.querySelectorAll('[data-move]').forEach(el => {
-            el.textContent = moveCounts[el.getAttribute('data-move')] || 0;
-          });
-          // Move log
-          addToLog(action);
-        }
-      }
-    } else {
-      document.getElementById('actionLabel').textContent = '⚡ Ready';
-      document.getElementById('actionLabel').style.borderColor = 'var(--neon-green)';
-      document.getElementById('actionLabel').style.color = 'var(--neon-green)';
-      document.getElementById('actionLabel').style.textShadow = '0 0 10px rgba(0,255,204,0.7)';
-    }
+    animId = requestAnimationFrame(renderFrame);
   }
 
-  function addToLog(action) {
-    const log = document.getElementById('moveLog');
-    const dummyMsg = log.querySelector('.idle-msg');
-    if (dummyMsg) dummyMsg.remove();
-
-    const now = new Date();
-    const t = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-    const entry = document.createElement('div');
-    entry.className = 'move-entry';
-    entry.innerHTML = `<span>🥊 ${action}</span><span class="time">${t}</span>`;
-    log.prepend(entry);
-    // Keep only 10 last entries
-    while (log.children.length > 10) log.removeChild(log.lastChild);
-  }
-
-  // ─────────── Camera Control ───────────
-  async function startCamera() {
+  // ── Camera Control ──
+  window.startCamera = async function() {
     document.getElementById('startBtn').disabled = true;
+    document.getElementById('startBtn').textContent = '⏳ Loading model...';
 
-    pose = new Pose({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+
+    poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task",
+        delegate: "GPU"
+      },
+      runningMode: "VIDEO",
+      numPoses: MAX_PERSONS,
+      minPoseDetectionConfidence: 0.6,
+      minPosePresenceConfidence: 0.6,
+      minTrackingConfidence: 0.6,
     });
 
-    pose.setOptions({
-      modelComplexity: 2,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.7
-    });
-
-    pose.onResults(onResults);
-
-    camera = new Camera(videoEl, {
-      onFrame: async () => { await pose.send({ image: videoEl }); },
-      width: 1280, height: 720
-    });
-
-    await camera.start();
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
+    videoEl = document.createElement('video');
+    videoEl.srcObject = stream;
+    videoEl.autoplay = true;
+    videoEl.playsInline = true;
+    await videoEl.play();
 
     document.getElementById('statusDot').classList.add('active');
     document.getElementById('statusText').textContent = 'Live';
+    document.getElementById('startBtn').textContent = '▶ Start Camera';
     document.getElementById('stopBtn').disabled = false;
-  }
 
-  function stopCamera() {
-    if (camera) { camera.stop(); camera = null; }
-    if (pose) { pose.close(); pose = null; }
+    renderFrame();
+  };
+
+  window.stopCamera = function() {
+    if (animId) cancelAnimationFrame(animId);
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (poseLandmarker) { poseLandmarker.close(); poseLandmarker = null; }
+    videoEl = null;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     document.getElementById('statusDot').classList.remove('active');
     document.getElementById('statusText').textContent = 'Camera Off';
@@ -610,7 +533,10 @@
     document.getElementById('stopBtn').disabled = true;
     document.getElementById('actionLabel').textContent = '⚡ Ready';
     document.getElementById('fpsLabel').textContent = '-- FPS';
-  }
+    document.getElementById('personsChip').textContent = '0 Fighters Detected';
+    document.getElementById('personTabs').innerHTML = '<span class="idle-msg">Camera off</span>';
+  };
 </script>
+
 </body>
 </html>
